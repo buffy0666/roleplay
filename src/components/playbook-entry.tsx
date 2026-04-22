@@ -8,7 +8,9 @@ import { Card } from "@/components/ui/card";
 import { Field, Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  DISRUPTER_PRESETS,
   PLAYBOOK_CATEGORIES,
+  hasAnyContent,
   type PlaybookCategory,
   type PlaybookEntry,
 } from "@/lib/playbook";
@@ -35,13 +37,21 @@ export function PlaybookEntryCard({
   onCancelNew,
 }: Props) {
   const [editing, setEditing] = useState(startInEdit);
-  const [objection, setObjection] = useState(entry.objection);
-  const [response, setResponse] = useState(entry.response);
-  const [notes, setNotes] = useState(entry.notes ?? "");
   const [category, setCategory] = useState<PlaybookCategory>(entry.category);
+  const [objection, setObjection] = useState(entry.objection);
+  const [disrupter, setDisrupter] = useState(entry.disrupter ?? "");
+  const [continuedObjection, setContinuedObjection] = useState(
+    entry.continuedObjection ?? "",
+  );
+  const [response, setResponse] = useState(entry.response ?? "");
+  const [notes, setNotes] = useState(entry.notes ?? "");
+  const [showDisrupterFlow, setShowDisrupterFlow] = useState(
+    Boolean(entry.disrupter || entry.continuedObjection),
+  );
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const objectionRef = useRef<HTMLTextAreaElement | null>(null);
+  const disrupterRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (editing) {
@@ -49,29 +59,52 @@ export function PlaybookEntryCard({
     }
   }, [editing]);
 
-  const canSave = objection.trim().length > 0 && response.trim().length > 0;
+  const canSave = objection.trim().length > 0;
 
   const handleSave = () => {
     if (!canSave) return;
+    const useFlow = showDisrupterFlow;
     onSave({
-      objection: objection.trim(),
-      response: response.trim(),
-      notes: notes.trim() || undefined,
       category,
+      objection: objection.trim(),
+      disrupter: useFlow && disrupter.trim() ? disrupter.trim() : undefined,
+      continuedObjection:
+        useFlow && continuedObjection.trim()
+          ? continuedObjection.trim()
+          : undefined,
+      response: response.trim() || undefined,
+      notes: notes.trim() || undefined,
     });
     setEditing(false);
   };
 
   const handleCancel = () => {
-    if (!entry.objection && !entry.response && onCancelNew) {
+    const isDraft = !hasAnyContent(entry);
+    if (isDraft && onCancelNew) {
       onCancelNew();
       return;
     }
-    setObjection(entry.objection);
-    setResponse(entry.response);
-    setNotes(entry.notes ?? "");
     setCategory(entry.category);
+    setObjection(entry.objection);
+    setDisrupter(entry.disrupter ?? "");
+    setContinuedObjection(entry.continuedObjection ?? "");
+    setResponse(entry.response ?? "");
+    setNotes(entry.notes ?? "");
+    setShowDisrupterFlow(
+      Boolean(entry.disrupter || entry.continuedObjection),
+    );
     setEditing(false);
+  };
+
+  const openDisrupterFlow = () => {
+    setShowDisrupterFlow(true);
+    requestAnimationFrame(() => disrupterRef.current?.focus());
+  };
+
+  const removeDisrupterFlow = () => {
+    setDisrupter("");
+    setContinuedObjection("");
+    setShowDisrupterFlow(false);
   };
 
   if (editing) {
@@ -79,10 +112,10 @@ export function PlaybookEntryCard({
       <Card className="p-6 border-foreground/15 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)]">
         <div className="flex items-center justify-between mb-5">
           <Badge tone="brand">
-            {entry.objection ? "Editing" : "New objection"}
+            {hasAnyContent(entry) ? "Editing" : "New objection"}
           </Badge>
           <div className="text-xs text-muted-foreground">
-            Required: objection + ideal response
+            Only the objection is required. Add the rest as you draft it.
           </div>
         </div>
 
@@ -100,10 +133,7 @@ export function PlaybookEntryCard({
             </Select>
           </Field>
 
-          <Field
-            label="Objection"
-            hint="What the prospect actually says"
-          >
+          <Field label="Objection" hint="What the prospect actually says">
             <Textarea
               ref={objectionRef}
               value={objection}
@@ -113,14 +143,27 @@ export function PlaybookEntryCard({
             />
           </Field>
 
+          {showDisrupterFlow ? (
+            <DisrupterSection
+              disrupter={disrupter}
+              onChangeDisrupter={setDisrupter}
+              continuedObjection={continuedObjection}
+              onChangeContinuedObjection={setContinuedObjection}
+              onRemove={removeDisrupterFlow}
+              inputRef={disrupterRef}
+            />
+          ) : (
+            <AddDisrupterButton onClick={openDisrupterFlow} />
+          )}
+
           <Field
-            label="Ideal response"
-            hint="The answer you want to practice"
+            label="Response"
+            hint="Optional — the answer you want to practice"
           >
             <Textarea
               value={response}
               onChange={(e) => setResponse(e.target.value)}
-              placeholder="e.g. Totally fair — can I ask what's driving that comparison for you?"
+              placeholder="e.g. Got it — fair question. Where we usually differ is on…"
               rows={4}
             />
           </Field>
@@ -154,7 +197,7 @@ export function PlaybookEntryCard({
 
   return (
     <Card className="p-6">
-      <div className="flex items-start justify-between gap-4 mb-4">
+      <div className="flex items-start justify-between gap-4 mb-5">
         <Badge tone="neutral">{entry.category}</Badge>
         <div className="flex items-center gap-1">
           <IconButton
@@ -184,36 +227,82 @@ export function PlaybookEntryCard({
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div>
-          <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
-            Objection
-          </div>
-          <p className="text-[17px] leading-7 font-medium">
-            &ldquo;{entry.objection}&rdquo;
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-border bg-muted/50 p-4">
-          <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
-            Ideal response
-          </div>
-          <p className="text-[14px] leading-7 text-foreground">
-            {entry.response}
-          </p>
-        </div>
-
-        {entry.notes ? (
-          <div>
-            <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">
-              Notes
-            </div>
-            <p className="text-[13px] leading-6 text-muted-foreground">
-              {entry.notes}
+      <StepList>
+        <Step
+          label="Objection"
+          kind="objection"
+          content={
+            <p className="text-[17px] leading-7 font-medium">
+              &ldquo;{entry.objection}&rdquo;
             </p>
-          </div>
+          }
+        />
+
+        {entry.disrupter ? (
+          <Step
+            label="Your disrupter"
+            kind="disrupter"
+            content={
+              <div className="rounded-xl border border-brand/20 bg-brand-soft/70 p-3.5">
+                <p className="text-[14px] leading-6 text-foreground">
+                  &ldquo;{entry.disrupter}&rdquo;
+                </p>
+              </div>
+            }
+          />
         ) : null}
-      </div>
+
+        {entry.continuedObjection ? (
+          <Step
+            label="Likely continued objection"
+            kind="continued"
+            content={
+              <p className="text-[14px] leading-6 text-muted-foreground italic">
+                &ldquo;{entry.continuedObjection}&rdquo;
+              </p>
+            }
+          />
+        ) : null}
+
+        {entry.response ? (
+          <Step
+            label="Your response"
+            kind="response"
+            content={
+              <div className="rounded-xl border border-border bg-muted/50 p-3.5">
+                <p className="text-[14px] leading-7 text-foreground">
+                  {entry.response}
+                </p>
+              </div>
+            }
+          />
+        ) : null}
+      </StepList>
+
+      {!entry.disrupter && !entry.response ? (
+        <div className="mt-4 rounded-lg border border-dashed border-border p-3 text-[13px] text-muted-foreground">
+          You haven&rsquo;t drafted a disrupter or response yet.{" "}
+          <button
+            type="button"
+            className="text-foreground underline"
+            onClick={() => setEditing(true)}
+          >
+            Fill it in
+          </button>{" "}
+          so you can practice it.
+        </div>
+      ) : null}
+
+      {entry.notes ? (
+        <div className="mt-5">
+          <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">
+            Notes
+          </div>
+          <p className="text-[13px] leading-6 text-muted-foreground">
+            {entry.notes}
+          </p>
+        </div>
+      ) : null}
 
       <div className="mt-6 pt-4 border-t border-border flex items-center justify-between">
         <span className="text-xs text-muted-foreground">
@@ -249,6 +338,140 @@ export function PlaybookEntryCard({
     </Card>
   );
 }
+
+// ─── Edit helpers ──────────────────────────────────────────────────────────
+
+function AddDisrupterButton({ onClick }: { onClick: () => void }) {
+  return (
+    <div className="rounded-xl border border-dashed border-border p-4 flex items-center justify-between gap-4">
+      <div>
+        <div className="text-[13px] font-semibold">Add a disrupter</div>
+        <p className="text-[12px] leading-5 text-muted-foreground mt-0.5 max-w-sm">
+          Unpack the objection before you answer. A disrupter buys you room and
+          surfaces what&rsquo;s actually behind the pushback.
+        </p>
+      </div>
+      <Button size="sm" variant="secondary" onClick={onClick}>
+        + Add disrupter
+      </Button>
+    </div>
+  );
+}
+
+function DisrupterSection({
+  disrupter,
+  onChangeDisrupter,
+  continuedObjection,
+  onChangeContinuedObjection,
+  onRemove,
+  inputRef,
+}: {
+  disrupter: string;
+  onChangeDisrupter: (v: string) => void;
+  continuedObjection: string;
+  onChangeContinuedObjection: (v: string) => void;
+  onRemove: () => void;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+}) {
+  return (
+    <div className="rounded-xl border border-brand/25 bg-brand-soft/40 p-4 space-y-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="text-[12px] font-semibold uppercase tracking-wide text-brand">
+          Disrupter flow
+        </div>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="text-[12px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Remove
+        </button>
+      </div>
+
+      <Field label="Disrupter" hint="Say this first — don't answer yet">
+        <input
+          ref={inputRef}
+          type="text"
+          value={disrupter}
+          onChange={(e) => onChangeDisrupter(e.target.value)}
+          placeholder="Pick a preset below or type your own"
+          className="w-full h-10 px-3.5 rounded-lg bg-surface border border-border text-[14px] text-foreground placeholder:text-muted-foreground/70 transition-colors focus:outline-none focus:border-foreground/30 focus:ring-2 focus:ring-brand/20"
+        />
+      </Field>
+
+      <div className="flex flex-wrap gap-1.5">
+        {DISRUPTER_PRESETS.map((p) => {
+          const active = disrupter.trim() === p;
+          return (
+            <button
+              key={p}
+              type="button"
+              onClick={() => onChangeDisrupter(p)}
+              className={`h-7 px-2.5 text-[12px] rounded-full border transition-colors ${
+                active
+                  ? "bg-foreground text-background border-foreground"
+                  : "bg-surface text-muted-foreground border-border hover:text-foreground hover:border-foreground/30"
+              }`}
+            >
+              {p}
+            </button>
+          );
+        })}
+      </div>
+
+      <Field
+        label="Likely continued objection"
+        hint="Optional — what they'll probably say next"
+      >
+        <Textarea
+          value={continuedObjection}
+          onChange={(e) => onChangeContinuedObjection(e.target.value)}
+          placeholder="e.g. Tool X quoted us 30% less for the same features."
+          rows={2}
+        />
+      </Field>
+    </div>
+  );
+}
+
+// ─── View helpers ──────────────────────────────────────────────────────────
+
+type StepKind = "objection" | "disrupter" | "continued" | "response";
+
+function StepList({ children }: { children: React.ReactNode }) {
+  return <ol className="relative space-y-5">{children}</ol>;
+}
+
+function Step({
+  label,
+  kind,
+  content,
+}: {
+  label: string;
+  kind: StepKind;
+  content: React.ReactNode;
+}) {
+  const dot =
+    kind === "disrupter"
+      ? "bg-brand"
+      : kind === "response"
+        ? "bg-foreground"
+        : "bg-muted-foreground/60";
+  return (
+    <li className="relative pl-6">
+      <span
+        className={`absolute left-0 top-2 h-2.5 w-2.5 rounded-full ${dot}`}
+        aria-hidden="true"
+      />
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1.5">
+        {label}
+      </div>
+      {content}
+    </li>
+  );
+}
+
+// ─── Icon buttons ──────────────────────────────────────────────────────────
 
 function IconButton({
   label,

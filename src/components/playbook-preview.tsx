@@ -52,9 +52,16 @@ export function PlaybookPreview() {
                 <span className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground w-20 shrink-0">
                   {e.category}
                 </span>
-                <p className="text-sm text-foreground line-clamp-2 flex-1">
-                  &ldquo;{e.objection}&rdquo;
-                </p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-foreground line-clamp-2">
+                    &ldquo;{e.objection}&rdquo;
+                  </p>
+                  <FlowBar
+                    hasDisrupter={!!e.disrupter}
+                    hasContinued={!!e.continuedObjection}
+                    hasResponse={!!e.response}
+                  />
+                </div>
               </li>
             ))}
           </ul>
@@ -67,5 +74,40 @@ export function PlaybookPreview() {
         </div>
       ) : null}
     </Card>
+  );
+}
+
+function FlowBar({
+  hasDisrupter,
+  hasContinued,
+  hasResponse,
+}: {
+  hasDisrupter: boolean;
+  hasContinued: boolean;
+  hasResponse: boolean;
+}) {
+  const steps: { label: string; active: boolean }[] = [
+    { label: "Disrupter", active: hasDisrupter },
+    { label: "Continued", active: hasContinued },
+    { label: "Response", active: hasResponse },
+  ];
+  return (
+    <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+      {steps.map((s) => (
+        <span
+          key={s.label}
+          className={`inline-flex items-center gap-1 text-[10px] font-medium ${
+            s.active ? "text-foreground" : "text-muted-foreground/70"
+          }`}
+        >
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${
+              s.active ? "bg-brand" : "bg-muted-foreground/40"
+            }`}
+          />
+          {s.label}
+        </span>
+      ))}
+    </div>
   );
 }

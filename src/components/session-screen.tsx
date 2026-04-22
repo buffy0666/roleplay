@@ -431,20 +431,63 @@ function PlaybookPanel({
           </div>
           <Badge tone="brand">{focused.category}</Badge>
         </div>
-        <p className="mt-3 text-[15px] font-medium leading-6">
-          &ldquo;{focused.objection}&rdquo;
-        </p>
-        <div className="mt-3 rounded-lg border border-border bg-muted/60 p-3">
-          <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
-            Your ideal response
-          </div>
-          <p className="text-[13px] leading-6">{focused.response}</p>
-        </div>
+
+        <ol className="mt-4 space-y-4">
+          <FocusedStep
+            label="Objection"
+            tone="muted"
+            body={
+              <p className="text-[14px] leading-6 font-medium">
+                &ldquo;{focused.objection}&rdquo;
+              </p>
+            }
+          />
+          {focused.disrupter ? (
+            <FocusedStep
+              label="Your disrupter"
+              tone="brand"
+              body={
+                <div className="rounded-lg border border-brand/25 bg-brand-soft/60 px-3 py-2">
+                  <p className="text-[13px] leading-6">
+                    &ldquo;{focused.disrupter}&rdquo;
+                  </p>
+                </div>
+              }
+            />
+          ) : null}
+          {focused.continuedObjection ? (
+            <FocusedStep
+              label="Likely continued"
+              tone="muted"
+              body={
+                <p className="text-[13px] leading-6 italic text-muted-foreground">
+                  &ldquo;{focused.continuedObjection}&rdquo;
+                </p>
+              }
+            />
+          ) : null}
+          {focused.response ? (
+            <FocusedStep
+              label="Your response"
+              tone="solid"
+              body={
+                <div className="rounded-lg border border-border bg-muted/60 px-3 py-2">
+                  <p className="text-[13px] leading-6">{focused.response}</p>
+                </div>
+              }
+            />
+          ) : null}
+        </ol>
+
         {focused.notes ? (
-          <p className="mt-3 text-[12px] leading-5 text-muted-foreground">
-            Notes: {focused.notes}
+          <p className="mt-4 pt-3 border-t border-border text-[12px] leading-5 text-muted-foreground">
+            <span className="uppercase tracking-wide text-[10px] text-muted-foreground/80 mr-1">
+              Notes
+            </span>
+            {focused.notes}
           </p>
         ) : null}
+
         <div className="mt-4 text-right">
           <Link
             href="/playbook"
@@ -509,6 +552,35 @@ function PlaybookPanel({
         ))}
       </ul>
     </Card>
+  );
+}
+
+function FocusedStep({
+  label,
+  tone,
+  body,
+}: {
+  label: string;
+  tone: "muted" | "brand" | "solid";
+  body: React.ReactNode;
+}) {
+  const dot =
+    tone === "brand"
+      ? "bg-brand"
+      : tone === "solid"
+        ? "bg-foreground"
+        : "bg-muted-foreground/50";
+  return (
+    <li className="relative pl-5">
+      <span
+        className={`absolute left-0 top-1.5 h-2 w-2 rounded-full ${dot}`}
+        aria-hidden="true"
+      />
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+        {label}
+      </div>
+      {body}
+    </li>
   );
 }
 

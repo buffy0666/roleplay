@@ -19,15 +19,24 @@ export const PLAYBOOK_CATEGORIES: PlaybookCategory[] = [
 
 export type PlaybookEntry = {
   id: string;
-  objection: string;
-  response: string;
   category: PlaybookCategory;
+  objection: string;
+  disrupter?: string;
+  continuedObjection?: string;
+  response?: string;
   notes?: string;
   createdAt: number;
   updatedAt: number;
 };
 
 export const PLAYBOOK_STORAGE_KEY = "roleplay.playbook.v1";
+
+export const DISRUPTER_PRESETS: readonly string[] = [
+  "What makes you say that?",
+  "Could you unpack that for me?",
+  "I understand — what led you to that policy?",
+  "Could you share a little more about that?",
+];
 
 function generateId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -40,43 +49,72 @@ export function createEntry(partial: Partial<PlaybookEntry> = {}): PlaybookEntry
   const now = Date.now();
   return {
     id: generateId(),
-    objection: "",
-    response: "",
     category: "Other",
-    notes: "",
+    objection: "",
     createdAt: now,
     updatedAt: now,
     ...partial,
   };
 }
 
-export const SAMPLE_PLAYBOOK: Omit<PlaybookEntry, "id" | "createdAt" | "updatedAt">[] = [
+export function hasAnyContent(e: Pick<
+  PlaybookEntry,
+  "objection" | "disrupter" | "continuedObjection" | "response" | "notes"
+>): boolean {
+  return Boolean(
+    (e.objection && e.objection.trim()) ||
+      (e.disrupter && e.disrupter.trim()) ||
+      (e.continuedObjection && e.continuedObjection.trim()) ||
+      (e.response && e.response.trim()) ||
+      (e.notes && e.notes.trim()),
+  );
+}
+
+export const SAMPLE_PLAYBOOK: Omit<
+  PlaybookEntry,
+  "id" | "createdAt" | "updatedAt"
+>[] = [
   {
-    objection: "Your price is higher than the other tools we're looking at.",
-    response:
-      "Totally fair — price should be in the conversation. Can I ask: if we set price aside for a second, is this the kind of outcome your team actually needs? I want to make sure we're comparing on value, not just sticker.",
     category: "Price",
-    notes: "Reframe from cost to outcome. Don't discount in the first 10 seconds.",
+    objection: "Your price is higher than the other tools we're looking at.",
+    disrupter: "What makes you say that?",
+    continuedObjection:
+      "Tool X quoted us about 30% less for what looks like the same feature set.",
+    response:
+      "Got it — fair comparison on paper. Where we usually differ is in [specific capability]. Can I ask: is that capability critical for your team? If it isn't, we may not be the right fit, and I'd rather save us both time than win on sticker.",
+    notes:
+      "Reframe from cost to value. Don't discount in the first 10 seconds — uncover what's actually being compared.",
   },
   {
-    objection: "We're already using a competitor and it's fine.",
-    response:
-      "That's great to hear — most teams we talk to already have something in place. Out of curiosity, what do you like most about it, and where do you wish it did more? I'll be honest about whether we're a fit or not.",
     category: "Competition",
-    notes: "Lead with genuine curiosity. The 'I'll be honest' line builds trust.",
+    objection: "We're already using a competitor and it's fine.",
+    disrupter: "Could you unpack that for me — where does 'fine' stop being enough?",
+    continuedObjection:
+      "Honestly, the reporting is weak and we end up pulling half of it manually in spreadsheets.",
+    response:
+      "That's exactly the gap we've focused on. If I showed you how our customers pull the same reporting in two clicks, would that be worth 15 minutes together next week?",
+    notes:
+      "Lead with curiosity. Get them to name the pain before you pitch anything.",
   },
   {
-    objection: "Just send me some info and I'll review it with my team.",
-    response:
-      "Happy to — though if I just send a deck it usually gets buried. What's the one question your team needs answered before this is worth a real conversation? I'll put that on page one.",
     category: "Stall",
-    notes: "Avoid the 'send info' black hole. Make the follow-up concrete.",
+    objection: "Just send me some info and I'll review it with my team.",
+    disrupter: "Could you share a little more about what you'd want to see?",
+    continuedObjection:
+      "Something high-level on pricing plus a couple of case studies in our space.",
+    response:
+      "Happy to put that together. Quick question so this lands well — who else is reviewing it with you, and when do you actually need to make a decision? I'll shape the doc around that.",
+    notes: "Avoid the 'send info' black hole. Make the next step concrete.",
   },
   {
-    objection: "I'd need to get my CFO involved before anything like this.",
-    response:
-      "That makes sense — this is exactly the kind of decision that should have them in the room. What tends to matter most to your CFO on projects like this? I'd rather prep for their questions than walk in cold.",
     category: "Authority",
-    notes: "Don't treat the CFO as a blocker — treat them as a teammate to be briefed.",
+    objection: "I'd need to get my CFO involved before anything like this.",
+    disrupter: "I understand — what led you to that policy?",
+    continuedObjection:
+      "Any spend over $25K has to go through her office for sign-off.",
+    response:
+      "That makes sense. What tends to matter most to her on projects like this? I'd rather prep for her questions than walk you into a cold meeting.",
+    notes:
+      "Treat the CFO as a teammate to be briefed, not a blocker to route around.",
   },
 ];
