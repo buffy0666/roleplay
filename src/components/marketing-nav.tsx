@@ -17,16 +17,16 @@ export function MarketingNav() {
               Scenarios
             </Link>
             <Link
+              href="/playbook"
+              className="hover:text-foreground transition-colors"
+            >
+              Playbook
+            </Link>
+            <Link
               href="/dashboard"
               className="hover:text-foreground transition-colors"
             >
               Dashboard
-            </Link>
-            <Link
-              href="/session"
-              className="hover:text-foreground transition-colors"
-            >
-              Live Session
             </Link>
           </nav>
           <div className="flex items-center gap-2">

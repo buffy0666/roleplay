@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
+import { usePlaybook } from "@/hooks/use-playbook";
 import { getScenario, scenarios } from "@/lib/scenarios";
 
 type Turn = {
@@ -44,9 +46,15 @@ export function SessionScreen() {
   const router = useRouter();
   const params = useSearchParams();
   const scenarioId = params.get("scenario") ?? "discovery-call";
+  const objectionId = params.get("objection");
   const scenario = useMemo(
     () => getScenario(scenarioId) ?? scenarios[0],
     [scenarioId],
+  );
+  const { entries: playbookEntries, hydrated: playbookHydrated } = usePlaybook();
+  const focusedObjection = useMemo(
+    () => playbookEntries.find((e) => e.id === objectionId) ?? null,
+    [playbookEntries, objectionId],
   );
 
   const [status, setStatus] = useState<Status>("idle");
@@ -228,6 +236,12 @@ export function SessionScreen() {
               </dl>
             </Card>
 
+            <PlaybookPanel
+              entries={playbookEntries}
+              hydrated={playbookHydrated}
+              focused={focusedObjection}
+            />
+
             <Card className="p-5">
               <div className="flex items-center justify-between">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -387,6 +401,114 @@ function VoiceViz({ active }: { active: boolean }) {
         />
       ))}
     </div>
+  );
+}
+
+function PlaybookPanel({
+  entries,
+  hydrated,
+  focused,
+}: {
+  entries: ReturnType<typeof usePlaybook>["entries"];
+  hydrated: boolean;
+  focused: ReturnType<typeof usePlaybook>["entries"][number] | null;
+}) {
+  if (!hydrated) {
+    return (
+      <Card className="p-5">
+        <div className="h-4 w-28 rounded bg-muted animate-pulse" />
+        <div className="mt-4 h-20 rounded-lg bg-muted animate-pulse" />
+      </Card>
+    );
+  }
+
+  if (focused) {
+    return (
+      <Card className="p-5 border-brand/30">
+        <div className="flex items-center justify-between">
+          <div className="text-xs uppercase tracking-wide text-brand">
+            From your playbook
+          </div>
+          <Badge tone="brand">{focused.category}</Badge>
+        </div>
+        <p className="mt-3 text-[15px] font-medium leading-6">
+          &ldquo;{focused.objection}&rdquo;
+        </p>
+        <div className="mt-3 rounded-lg border border-border bg-muted/60 p-3">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+            Your ideal response
+          </div>
+          <p className="text-[13px] leading-6">{focused.response}</p>
+        </div>
+        {focused.notes ? (
+          <p className="mt-3 text-[12px] leading-5 text-muted-foreground">
+            Notes: {focused.notes}
+          </p>
+        ) : null}
+        <div className="mt-4 text-right">
+          <Link
+            href="/playbook"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Edit in playbook →
+          </Link>
+        </div>
+      </Card>
+    );
+  }
+
+  if (entries.length === 0) {
+    return (
+      <Card className="p-5">
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+          Your Playbook
+        </div>
+        <p className="mt-3 text-sm text-muted-foreground">
+          No custom objections yet. Save the pushback you want to rehearse —
+          it shows up here during practice.
+        </p>
+        <Link
+          href="/playbook"
+          className="mt-3 inline-block text-sm font-medium text-foreground hover:underline"
+        >
+          Build your playbook →
+        </Link>
+      </Card>
+    );
+  }
+
+  const preview = entries.slice(0, 3);
+  return (
+    <Card className="p-5">
+      <div className="flex items-center justify-between">
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+          From your playbook
+        </div>
+        <Link
+          href="/playbook"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          All {entries.length} →
+        </Link>
+      </div>
+      <ul className="mt-3 space-y-2">
+        {preview.map((e) => (
+          <li key={e.id}>
+            <Link
+              href={`/session?objection=${e.id}`}
+              className="block rounded-lg border border-border p-3 hover:border-foreground/20 hover:bg-muted transition-colors"
+            >
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                {e.category}
+              </div>
+              <p className="mt-1 text-[13px] leading-5 line-clamp-2">
+                &ldquo;{e.objection}&rdquo;
+              </p>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }
 

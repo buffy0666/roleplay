@@ -9,6 +9,7 @@ import { Logo } from "@/components/logo";
 const links = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/scenarios", label: "Scenarios" },
+  { href: "/playbook", label: "Playbook" },
   { href: "/session", label: "Session" },
 ];
 

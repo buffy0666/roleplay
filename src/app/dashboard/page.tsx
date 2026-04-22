@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardFooter, CardHeader } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
 import { AppNav } from "@/components/app-nav";
+import { PlaybookPreview } from "@/components/playbook-preview";
 import { ScenarioCard } from "@/components/scenario-card";
 import { scenarios } from "@/lib/scenarios";
 
@@ -245,6 +246,17 @@ export default function DashboardPage() {
               </Card>
             </section>
           </div>
+
+          {/* Playbook */}
+          <section>
+            <SectionHeader
+              title="Your Playbook"
+              description="The objections and ideal responses you want to practice."
+              href="/playbook"
+              cta="Manage playbook"
+            />
+            <PlaybookPreview />
+          </section>
 
           {/* Coaching insights */}
           <section>
