@@ -28,6 +28,12 @@ export function MarketingNav() {
             >
               Dashboard
             </Link>
+            <Link
+              href="/billing"
+              className="hover:text-foreground transition-colors"
+            >
+              Billing
+            </Link>
           </nav>
           <div className="flex items-center gap-2">
             <Button href="/dashboard" variant="ghost" size="sm">
